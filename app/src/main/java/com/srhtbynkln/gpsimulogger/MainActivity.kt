@@ -227,6 +227,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         b.webMap.settings.javaScriptEnabled = true
+        // OSM Tile Usage Policy: dosya kaynakli WebView, gecerli ve uygulamayi tanimlayan
+        // bir User-Agent ister; aksi halde tile.openstreetmap.org "Access blocked" doner.
+        b.webMap.settings.userAgentString =
+            "${BuildConfig.APPLICATION_ID}/${BuildConfig.VERSION_NAME} " +
+            "(+https://github.com/srhtbynkln/gps-imu-hybrid-sensor-logger)"
         b.btnMap.setOnClickListener { showRouteMap() }
         // Yon belirtecine dokununca yonu sifirla (su anki yon = baslangic/Duz)
         b.relHeading.setOnClickListener {
