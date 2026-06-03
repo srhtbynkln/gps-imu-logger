@@ -1,8 +1,8 @@
-# GPS &amp; IMU Logger
+# GPS, IMU &amp; Hybrid Sensor Logger
 
 An open-source Android app that shows, in real time, **how a phone's position track
-looks using GPS only, using the IMU only, and using the two together** — so you can
-see for yourself how each source behaves and how combining them compares.
+looks using GPS only, using the IMU only, and using a hybrid Kalman fusion of the two**
+— so you can see for yourself how each source behaves and how combining them compares.
 
 It records the phone's **GPS** and **IMU** (accelerometer, gyroscope, magnetometer,
 orientation) data, draws the route from each source on screen and on an OpenStreetMap
@@ -49,8 +49,8 @@ Requirements: JDK 17 and the Android SDK (command-line tools are enough — Andr
 Studio is optional).
 
 ```bash
-git clone https://github.com/srhtbynkln/gps-imu-logger.git
-cd gps-imu-logger
+git clone https://github.com/srhtbynkln/gps-imu-hybrid-sensor-logger.git
+cd gps-imu-hybrid-sensor-logger
 ./gradlew assembleDebug      # debug APK in app/build/outputs/apk/debug/
 ```
 
