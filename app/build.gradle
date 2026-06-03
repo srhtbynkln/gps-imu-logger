@@ -12,11 +12,11 @@ if (keystorePropsFile.exists()) {
 }
 
 android {
-    namespace 'com.srhtbynkln.kalmanlogger'
+    namespace 'com.srhtbynkln.gpsimulogger'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.srhtbynkln.kalmanlogger"
+        applicationId "com.srhtbynkln.gpsimulogger"
         minSdk 24
         targetSdk 34
         versionCode 1

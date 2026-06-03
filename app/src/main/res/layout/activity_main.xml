@@ -27,13 +27,13 @@
             android:textStyle="bold"
             android:paddingBottom="8dp" />
 
-        <com.srhtbynkln.kalmanlogger.LiveCompassView
+        <com.srhtbynkln.gpsimulogger.LiveCompassView
             android:id="@+id/liveCompass"
             android:layout_width="match_parent"
             android:layout_height="240dp"
             android:paddingBottom="8dp" />
 
-        <com.srhtbynkln.kalmanlogger.RelHeadingView
+        <com.srhtbynkln.gpsimulogger.RelHeadingView
             android:id="@+id/relHeading"
             android:layout_width="match_parent"
             android:layout_height="170dp"
@@ -52,7 +52,7 @@
             android:layout_height="wrap_content"
             android:paddingBottom="4dp" />
 
-        <com.srhtbynkln.kalmanlogger.TrackView
+        <com.srhtbynkln.gpsimulogger.TrackView
             android:id="@+id/trackView"
             android:layout_width="match_parent"
             android:layout_height="240dp"

@@ -1,4 +1,4 @@
-package com.srhtbynkln.kalmanlogger
+package com.srhtbynkln.gpsimulogger
 
 import android.annotation.SuppressLint
 import android.content.Context

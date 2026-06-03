@@ -1,4 +1,4 @@
-package com.srhtbynkln.kalmanlogger
+package com.srhtbynkln.gpsimulogger
 
 /**
  * Basit 1B sabit-hiz Kalman filtresi. Durum: [konum, hiz].

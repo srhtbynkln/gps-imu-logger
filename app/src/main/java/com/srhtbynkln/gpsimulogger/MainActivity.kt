@@ -1,4 +1,4 @@
-package com.srhtbynkln.kalmanlogger
+package com.srhtbynkln.gpsimulogger
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -24,7 +24,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import com.srhtbynkln.kalmanlogger.databinding.ActivityMainBinding
+import com.srhtbynkln.gpsimulogger.databinding.ActivityMainBinding
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
