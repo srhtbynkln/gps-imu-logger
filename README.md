@@ -1,23 +1,28 @@
 # GPS &amp; IMU Logger
 
-An open-source Android app that records and visualises a phone's **GPS** and **IMU**
-(accelerometer, gyroscope, magnetometer, orientation) data in real time, and lets you
-export each session as CSV files.
+An open-source Android app that shows, in real time, **how a phone's position track
+looks using GPS only, using the IMU only, and using the two together** — so you can
+see for yourself how each source behaves and how combining them compares.
 
-Built originally as a data-collection tool for comparing Kalman-filter based
-sensor-fusion methods (GNSS/IMU integration), released here for general use.
+It records the phone's **GPS** and **IMU** (accelerometer, gyroscope, magnetometer,
+orientation) data, draws the route from each source on screen and on an OpenStreetMap
+map, and lets you export every session as CSV files.
 
-> Türkçe: Telefonun **GPS** ve **IMU** (ivmeölçer, jiroskop, manyetometre, yönelim)
-> verilerini gerçek zamanlı kaydeden ve görselleştiren açık kaynak bir Android
-> uygulaması. Her oturumu CSV dosyaları olarak dışa aktarır.
+> Türkçe: Telefonun konum rotasının **yalnızca GPS ile**, **yalnızca IMU ile** ve
+> **ikisinin birlikte** çalıştığı halde nasıl göründüğünü gerçek zamanlı gösteren açık
+> kaynak bir Android uygulaması — her kaynağın davranışını ve birleşiminin sonucunu
+> kullanıcıya görsel olarak sunar. GPS ve IMU (ivmeölçer, jiroskop, manyetometre,
+> yönelim) verilerini kaydedip her oturumu CSV olarak dışa aktarır.
 
 ## Features
 
 - **Live sensor panel** — accelerometer, gyroscope, magnetometer, heading.
 - **GPS quality readout** — horizontal accuracy, satellites used/total, speed; auto-start
   recording once a good fix is acquired.
-- **Track view + OpenStreetMap** — draws the recorded route from GPS, and an IMU
-  dead-reckoning track (gyro heading + double-integrated acceleration) for comparison.
+- **Track view + OpenStreetMap** — pick the source (**GPS only / IMU only / both**) and
+  the recorded route is drawn that way, both on the in-app canvas and on the map: GPS
+  trajectory (blue) and IMU dead-reckoning track (gyro heading + double-integrated
+  acceleration, orange), overlaid so you can compare them directly.
 - **CSV logging** — standard per-sensor CSV files per session
   (`Accelerometer.csv`, `Gyroscope.csv`, `Magnetometer.csv`, `Location.csv`,
   `Orientation.csv`).
@@ -34,11 +39,12 @@ sensor-fusion methods (GNSS/IMU integration), released here for general use.
 
 ## Build
 
-Requirements: Android Studio (Giraffe+) or the command-line Android SDK, JDK 17.
+Requirements: JDK 17 and the Android SDK (command-line tools are enough — Android
+Studio is optional).
 
 ```bash
-git clone https://github.com/srhtbynkln/gps-imu-integration.git
-cd gps-imu-integration
+git clone https://github.com/srhtbynkln/gps-imu-logger.git
+cd gps-imu-logger
 ./gradlew assembleDebug      # debug APK in app/build/outputs/apk/debug/
 ```
 

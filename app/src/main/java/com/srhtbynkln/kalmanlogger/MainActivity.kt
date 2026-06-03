@@ -73,6 +73,10 @@ class MainActivity : AppCompatActivity() {
     private val trkLon = ArrayList<Double>()
     private var refLat = Double.NaN
     private var refLon = Double.NaN
+    // IMU dead-reckoning rotasi (baslangica gore yerel metre: Dogu, Kuzey) - haritada
+    // GPS baslangic referansiyla cografi koordinata cevrilip ustune bindirilir
+    private val imuTrkE = ArrayList<Double>()
+    private val imuTrkN = ArrayList<Double>()
 
     private val pvLoc = object : LocationListener {
         override fun onLocationChanged(loc: Location) {
@@ -133,6 +137,7 @@ class MainActivity : AppCompatActivity() {
                                 drVE *= leak; drVN *= leak
                             }
                             b.trackView.addImu(drPE.toFloat(), drPN.toFloat())
+                            imuTrkE.add(drPE); imuTrkN.add(drPN)
                         }
                     }
                     prevAccNs = e.timestamp
@@ -224,39 +229,81 @@ class MainActivity : AppCompatActivity() {
     private fun resetTrack() {
         b.trackView.clear()
         trkLat.clear(); trkLon.clear(); refLat = Double.NaN; refLon = Double.NaN
+        imuTrkE.clear(); imuTrkN.clear()
         drVE = 0.0; drVN = 0.0; drPE = 0.0; drPN = 0.0; prevAccNs = 0L
         b.webMap.visibility = android.view.View.GONE
     }
 
+    /** Secili kaynaga gore (GPS / IMU / ikisi) rotayi OSM haritasinda gosterir.
+     *  IMU rotasi, GPS baslangic noktasi referansiyla cografi koordinata cevrilir. */
     private fun showRouteMap() {
-        if (trkLat.size < 2) { log("Harita için yeterli GPS noktası yok (GPS fix bekleniyor)."); return }
-        val pts = StringBuilder("[")
-        for (i in trkLat.indices) {
-            if (i > 0) pts.append(",")
-            pts.append("[").append(trkLat[i]).append(",").append(trkLon[i]).append("]")
+        val mode = b.spinTrackSrc.selectedItemPosition   // 0=GPS, 1=IMU, 2=ikisi
+        val wantGps = mode == 0 || mode == 2
+        val wantImu = mode == 1 || mode == 2
+
+        fun seriesJson(pts: List<Pair<Double, Double>>): String {
+            val sb = StringBuilder("[")
+            pts.forEachIndexed { i, (la, lo) ->
+                if (i > 0) sb.append(",")
+                sb.append("[").append(la).append(",").append(lo).append("]")
+            }
+            return sb.append("]").toString()
         }
-        pts.append("]")
+
+        val gps = if (wantGps) trkLat.indices.map { trkLat[it] to trkLon[it] } else emptyList()
+
+        // IMU yerel metre -> cografi koordinat (GPS baslangic referansi gerekli)
+        val imu = ArrayList<Pair<Double, Double>>()
+        if (wantImu && !refLat.isNaN() && imuTrkE.size >= 2) {
+            val d2r = Math.PI / 180; val re = 6378137.0
+            for (i in imuTrkE.indices) {
+                val lat = refLat + Math.toDegrees(imuTrkN[i] / re)
+                val lon = refLon + Math.toDegrees(imuTrkE[i] / (re * Math.cos(refLat * d2r)))
+                imu.add(lat to lon)
+            }
+        }
+
+        val hasGps = gps.size >= 2
+        val hasImu = imu.size >= 2
+        if (!hasGps && !hasImu) {
+            log(if (mode == 1) "IMU rotası için kayıt + GPS başlangıç referansı gerekli."
+                else "Harita için yeterli GPS noktası yok (GPS fix bekleniyor).")
+            return
+        }
         b.webMap.visibility = android.view.View.VISIBLE
         b.webMap.loadDataWithBaseURL(
-            "https://www.openstreetmap.org/", leafletHtml(pts.toString()), "text/html", "UTF-8", null
+            "https://www.openstreetmap.org/",
+            leafletHtml(if (hasGps) seriesJson(gps) else "[]", if (hasImu) seriesJson(imu) else "[]"),
+            "text/html", "UTF-8", null
         )
-        log("Rota haritada gösteriliyor (${trkLat.size} nokta).")
+        val parts = listOfNotNull(
+            if (hasGps) "GPS ${gps.size} (mavi)" else null,
+            if (hasImu) "IMU ${imu.size} (turuncu)" else null
+        )
+        log("Harita: ${parts.joinToString(" + ")} nokta gösteriliyor.")
     }
 
-    private fun leafletHtml(ptsJson: String): String = """
+    private fun leafletHtml(gpsJson: String, imuJson: String): String = """
         <!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <style>html,body,#map{height:100%;margin:0}</style></head><body><div id="map"></div>
         <script>
-          var pts=$ptsJson;
+          var gps=$gpsJson, imu=$imuJson;
           var map=L.map('map');
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
              {maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-          var pl=L.polyline(pts,{color:'#1f77b4',weight:5}).addTo(map);
-          map.fitBounds(pl.getBounds().pad(0.2));
-          L.circleMarker(pts[0],{color:'green',radius:7,fillOpacity:1}).addTo(map).bindTooltip('Başlangıç');
-          L.circleMarker(pts[pts.length-1],{color:'red',radius:7,fillOpacity:1}).addTo(map).bindTooltip('Bitiş');
+          var all=[];
+          function addLine(pts,color,label){
+            if(pts.length<2) return;
+            L.polyline(pts,{color:color,weight:5}).addTo(map);
+            L.circleMarker(pts[0],{color:'green',radius:7,fillOpacity:1}).addTo(map).bindTooltip(label+' başlangıç');
+            L.circleMarker(pts[pts.length-1],{color:'red',radius:7,fillOpacity:1}).addTo(map).bindTooltip(label+' bitiş');
+            all=all.concat(pts);
+          }
+          addLine(gps,'#1f77b4','GPS');
+          addLine(imu,'#ff7f0e','IMU');
+          if(all.length) map.fitBounds(L.polyline(all).getBounds().pad(0.2));
         </script></body></html>
     """.trimIndent()
 
