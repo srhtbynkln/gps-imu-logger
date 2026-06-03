@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="GPS &amp; IMU Logger"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:paddingBottom="12dp" />
+
+        <TextView
+            android:id="@+id/txtStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Durum: HAZIR"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:paddingBottom="8dp" />
+
+        <com.srhtbynkln.kalmanlogger.LiveCompassView
+            android:id="@+id/liveCompass"
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:paddingBottom="8dp" />
+
+        <com.srhtbynkln.kalmanlogger.RelHeadingView
+            android:id="@+id/relHeading"
+            android:layout_width="match_parent"
+            android:layout_height="170dp"
+            android:paddingBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Kaydedilen rota — kaynak:"
+            android:textSize="13sp"
+            android:paddingTop="8dp" />
+
+        <Spinner
+            android:id="@+id/spinTrackSrc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="4dp" />
+
+        <com.srhtbynkln.kalmanlogger.TrackView
+            android:id="@+id/trackView"
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:background="#11000000" />
+
+        <Button
+            android:id="@+id/btnMap"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Rotayı haritada göster (OSM)"
+            android:paddingTop="8dp" />
+
+        <WebView
+            android:id="@+id/webMap"
+            android:layout_width="match_parent"
+            android:layout_height="360dp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/txtLive"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:textSize="13sp"
+            android:text="Canlı veri burada görünecek"
+            android:background="#11000000"
+            android:padding="12dp"
+            android:paddingBottom="12dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sensör örnekleme hızı"
+            android:textSize="13sp"
+            android:paddingTop="12dp" />
+
+        <Spinner
+            android:id="@+id/spinRate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="8dp" />
+
+        <TextView
+            android:id="@+id/txtGps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="GPS: BEKLE ⏳"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:background="#22008577"
+            android:padding="12dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <CheckBox
+            android:id="@+id/chkAutoStart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="GPS hazır olunca otomatik başlat"
+            android:checked="true"
+            android:paddingBottom="8dp" />
+
+        <Button
+            android:id="@+id/btnRecord"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="KAYDI BAŞLAT"
+            android:textSize="18sp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#33000000"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/btnShare"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tüm veriyi paylaş (WhatsApp, Gmail…)"
+            android:paddingTop="8dp" />
+
+        <Button
+            android:id="@+id/btnClear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Logları temizle"
+            android:paddingTop="8dp" />
+
+        <TextView
+            android:id="@+id/txtLog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:textSize="11sp"
+            android:text=""
+            android:paddingTop="16dp" />
+
+    </LinearLayout>
+</ScrollView>
