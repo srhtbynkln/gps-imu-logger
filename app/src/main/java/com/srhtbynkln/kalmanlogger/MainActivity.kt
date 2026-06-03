@@ -77,6 +77,11 @@ class MainActivity : AppCompatActivity() {
     // GPS baslangic referansiyla cografi koordinata cevrilip ustune bindirilir
     private val imuTrkE = ArrayList<Double>()
     private val imuTrkN = ArrayList<Double>()
+    // Hibrit fuzyon: eksen basina basit Kalman filtresi (IMU predict + GPS update)
+    private val kfE = Kf1D()
+    private val kfN = Kf1D()
+    private val fusE = ArrayList<Double>()   // fuzyon rotasi - yerel metre (Dogu)
+    private val fusN = ArrayList<Double>()   // fuzyon rotasi - yerel metre (Kuzey)
 
     private val pvLoc = object : LocationListener {
         override fun onLocationChanged(loc: Location) {
@@ -93,6 +98,8 @@ class MainActivity : AppCompatActivity() {
                 val e = ((loc.longitude - refLon) * d2r * re * Math.cos(refLat * d2r)).toFloat()
                 val n = ((loc.latitude - refLat) * d2r * re).toFloat()
                 b.trackView.addGps(e, n)
+                // Hibrit fuzyon: GPS olcumuyle duzelt (ilk fix filtreyi baslatir)
+                kfE.update(e.toDouble()); kfN.update(n.toDouble())
             }
         }
         @Deprecated("deprecated") override fun onStatusChanged(p: String?, s: Int, e: Bundle?) {}
@@ -138,6 +145,13 @@ class MainActivity : AppCompatActivity() {
                             }
                             b.trackView.addImu(drPE.toFloat(), drPN.toFloat())
                             imuTrkE.add(drPE); imuTrkN.add(drPN)
+                            // Hibrit fuzyon: IMU ivmesiyle durumu ileri tasi (GPS gelince
+                            // update() duzeltir; GPS yoksa sadece bu predict ile devam eder)
+                            if (kfE.isInited() && kfN.isInited()) {
+                                kfE.predict(aE, dt); kfN.predict(aN, dt)
+                                b.trackView.addFused(kfE.p.toFloat(), kfN.p.toFloat())
+                                fusE.add(kfE.p); fusN.add(kfN.p)
+                            }
                         }
                     }
                     prevAccNs = e.timestamp
@@ -203,7 +217,7 @@ class MainActivity : AppCompatActivity() {
 
         ArrayAdapter(
             this, android.R.layout.simple_spinner_dropdown_item,
-            listOf("GPS", "IMU (jiro+ivme)", "İkisi (GPS+IMU)")
+            listOf("GPS", "IMU (jiro+ivme)", "İkisi (GPS+IMU)", "Hibrit (füzyon)")
         ).also { b.spinTrackSrc.adapter = it }
         b.spinTrackSrc.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: android.widget.AdapterView<*>?, v: android.view.View?, pos: Int, id: Long) {
@@ -230,16 +244,30 @@ class MainActivity : AppCompatActivity() {
         b.trackView.clear()
         trkLat.clear(); trkLon.clear(); refLat = Double.NaN; refLon = Double.NaN
         imuTrkE.clear(); imuTrkN.clear()
+        fusE.clear(); fusN.clear(); kfE.reset(); kfN.reset()
         drVE = 0.0; drVN = 0.0; drPE = 0.0; drPN = 0.0; prevAccNs = 0L
         b.webMap.visibility = android.view.View.GONE
     }
 
-    /** Secili kaynaga gore (GPS / IMU / ikisi) rotayi OSM haritasinda gosterir.
-     *  IMU rotasi, GPS baslangic noktasi referansiyla cografi koordinata cevrilir. */
+    /** Yerel metre (Dogu, Kuzey) rotayi GPS baslangic referansiyla cografi
+     *  koordinata (lat, lon) cevirir. Referans yoksa bos liste doner. */
+    private fun localToLatLon(es: List<Double>, ns: List<Double>): List<Pair<Double, Double>> {
+        if (refLat.isNaN() || es.size < 2) return emptyList()
+        val d2r = Math.PI / 180; val re = 6378137.0
+        return es.indices.map { i ->
+            val lat = refLat + Math.toDegrees(ns[i] / re)
+            val lon = refLon + Math.toDegrees(es[i] / (re * Math.cos(refLat * d2r)))
+            lat to lon
+        }
+    }
+
+    /** Secili kaynaga gore (GPS / IMU / ikisi / hibrit) rotayi OSM haritasinda gosterir.
+     *  IMU ve fuzyon rotalari, GPS baslangic noktasi referansiyla cografi koordinata cevrilir. */
     private fun showRouteMap() {
-        val mode = b.spinTrackSrc.selectedItemPosition   // 0=GPS, 1=IMU, 2=ikisi
+        val mode = b.spinTrackSrc.selectedItemPosition   // 0=GPS, 1=IMU, 2=ikisi, 3=hibrit
         val wantGps = mode == 0 || mode == 2
         val wantImu = mode == 1 || mode == 2
+        val wantFus = mode == 3
 
         fun seriesJson(pts: List<Pair<Double, Double>>): String {
             val sb = StringBuilder("[")
@@ -251,45 +279,43 @@ class MainActivity : AppCompatActivity() {
         }
 
         val gps = if (wantGps) trkLat.indices.map { trkLat[it] to trkLon[it] } else emptyList()
+        val imu = if (wantImu) localToLatLon(imuTrkE, imuTrkN) else emptyList()
+        val fus = if (wantFus) localToLatLon(fusE, fusN) else emptyList()
 
-        // IMU yerel metre -> cografi koordinat (GPS baslangic referansi gerekli)
-        val imu = ArrayList<Pair<Double, Double>>()
-        if (wantImu && !refLat.isNaN() && imuTrkE.size >= 2) {
-            val d2r = Math.PI / 180; val re = 6378137.0
-            for (i in imuTrkE.indices) {
-                val lat = refLat + Math.toDegrees(imuTrkN[i] / re)
-                val lon = refLon + Math.toDegrees(imuTrkE[i] / (re * Math.cos(refLat * d2r)))
-                imu.add(lat to lon)
-            }
-        }
-
-        val hasGps = gps.size >= 2
-        val hasImu = imu.size >= 2
-        if (!hasGps && !hasImu) {
-            log(if (mode == 1) "IMU rotası için kayıt + GPS başlangıç referansı gerekli."
-                else "Harita için yeterli GPS noktası yok (GPS fix bekleniyor).")
+        val hasGps = gps.size >= 2; val hasImu = imu.size >= 2; val hasFus = fus.size >= 2
+        if (!hasGps && !hasImu && !hasFus) {
+            log(when (mode) {
+                1 -> "IMU rotası için kayıt + GPS başlangıç referansı gerekli."
+                3 -> "Hibrit rota için kayıt + ilk GPS fix'i gerekli."
+                else -> "Harita için yeterli GPS noktası yok (GPS fix bekleniyor)."
+            })
             return
         }
         b.webMap.visibility = android.view.View.VISIBLE
         b.webMap.loadDataWithBaseURL(
             "https://www.openstreetmap.org/",
-            leafletHtml(if (hasGps) seriesJson(gps) else "[]", if (hasImu) seriesJson(imu) else "[]"),
+            leafletHtml(
+                if (hasGps) seriesJson(gps) else "[]",
+                if (hasImu) seriesJson(imu) else "[]",
+                if (hasFus) seriesJson(fus) else "[]"
+            ),
             "text/html", "UTF-8", null
         )
         val parts = listOfNotNull(
             if (hasGps) "GPS ${gps.size} (mavi)" else null,
-            if (hasImu) "IMU ${imu.size} (turuncu)" else null
+            if (hasImu) "IMU ${imu.size} (turuncu)" else null,
+            if (hasFus) "Hibrit ${fus.size} (yeşil)" else null
         )
         log("Harita: ${parts.joinToString(" + ")} nokta gösteriliyor.")
     }
 
-    private fun leafletHtml(gpsJson: String, imuJson: String): String = """
+    private fun leafletHtml(gpsJson: String, imuJson: String, fusJson: String): String = """
         <!DOCTYPE html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <style>html,body,#map{height:100%;margin:0}</style></head><body><div id="map"></div>
         <script>
-          var gps=$gpsJson, imu=$imuJson;
+          var gps=$gpsJson, imu=$imuJson, fus=$fusJson;
           var map=L.map('map');
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
              {maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
@@ -303,6 +329,7 @@ class MainActivity : AppCompatActivity() {
           }
           addLine(gps,'#1f77b4','GPS');
           addLine(imu,'#ff7f0e','IMU');
+          addLine(fus,'#2ca02c','Hibrit');
           if(all.length) map.fitBounds(L.polyline(all).getBounds().pad(0.2));
         </script></body></html>
     """.trimIndent()

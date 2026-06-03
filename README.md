@@ -19,10 +19,16 @@ map, and lets you export every session as CSV files.
 - **Live sensor panel** — accelerometer, gyroscope, magnetometer, heading.
 - **GPS quality readout** — horizontal accuracy, satellites used/total, speed; auto-start
   recording once a good fix is acquired.
-- **Track view + OpenStreetMap** — pick the source (**GPS only / IMU only / both**) and
-  the recorded route is drawn that way, both on the in-app canvas and on the map: GPS
-  trajectory (blue) and IMU dead-reckoning track (gyro heading + double-integrated
-  acceleration, orange), overlaid so you can compare them directly.
+- **Track view + OpenStreetMap** — pick the source (**GPS only / IMU only / both /
+  hybrid fusion**) and the recorded route is drawn that way, both on the in-app canvas
+  and on the map: GPS trajectory (blue), IMU dead-reckoning track (gyro heading +
+  double-integrated acceleration, orange), and a **Kalman-fused** track (green),
+  overlaid so you can compare them directly.
+- **Hybrid Kalman fusion** — a small per-axis constant-velocity Kalman filter feeds IMU
+  acceleration into the *predict* step and corrects with GPS position in the *update*
+  step, so the fused track keeps running on the IMU alone when GPS drops out.
+  Intentionally simple and dependency-free — it demonstrates the idea rather than aiming
+  for production accuracy.
 - **CSV logging** — standard per-sensor CSV files per session
   (`Accelerometer.csv`, `Gyroscope.csv`, `Magnetometer.csv`, `Location.csv`,
   `Orientation.csv`).
